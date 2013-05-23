@@ -5,48 +5,62 @@
 <p>Count numbers: <output id="result"></output></p>
 <button onclick="startWorker()">Start Worker</button> 
 <button onclick="stopWorker()">Stop Worker</button>
+<button onclick="hello()">Hello</button>
 <br><br>
 <div>
-	<canvas id="plasma1" width="100" height="100" style="width: 900px; height: 900px"></canvas>
+	<canvas id="plasma1" width="100" height="100" style="width: 1000px; height: 1000px"></canvas>
 </div>
 
 <script>
 var w;
+var running;
+var clicks = 0;
+function startWorker() {
+	if (typeof(Worker) !== "undefined") {
+		if (typeof(w) == "undefined") {
+			w = new Worker("demo_workers.js");
+		}
+		w.onmessage = function(event) {
+			console.log("event: " + event.data);
+			document.getElementById("result")
+				.innerHTML = event.data;
+		};
+	} else {
+		document.getElementById("result")
+			.innerHTML = "Sorry, your browser does not support Web Workers...";
+	}
+	running = true;
+	drawAnimated("plasma1", plasmaFinal, colorMap1);
+	
+}
 
-function startWorker()
-{
-if(typeof(Worker)!=="undefined")
-{
-  if(typeof(w)=="undefined")
-    {
-    w=new Worker("demo_workers.js");
-    }
-  w.onmessage = function (event) {
-    document.getElementById("result").innerHTML=event.data;
-  };
-}
-else
-{
-document.getElementById("result").innerHTML="Sorry, your browser does not support Web Workers...";
-}
+function stopWorker() {
+	running = false;
+	w.terminate();
 }
 
-function stopWorker()
-{ 
-w.terminate();
+function hello() {
+	document.getElementById("result")
+		.innerHTML = "Hello: " + clicks++;
+	
 }
-</script>
-<script>
+
+
 
 var worker;
+var canvas;
+var context;
+var imageData;
+var px;
+
    window.requestAnimFrame = (function(){
-   	  console.log("test");
+   	  console.log("test:");
       return  window.requestAnimationFrame       || 
               window.webkitRequestAnimationFrame || 
               window.mozRequestAnimationFrame    || 
               window.oRequestAnimationFrame      || 
               function(callback){
-                 window.setTimeout(callback, 1000 / 60);
+                 window.setTimeout(callback, 1000 / 1);
               };
    })();
    
@@ -56,7 +70,25 @@ var worker;
     			worker=new Worker("demo_workers.js");
     		}
   			worker.onmessage = function (event) {
-    			console.log("event:" + event.data);
+				var data = event.data;
+				console.log("event:" + event.data);
+		  		switch (data.cmd) {
+		    		case 'result':
+						console.log("time1: " + new Date().getTime());
+						for(i in data.data) {
+							imageData.data[i] = data.data[i];
+						}
+						debugger;
+						context.putImageData(imageData, 0, 0);
+
+						if (running == true) {
+							requestAnimFrame(drawFrame);
+					   	}
+
+						break;
+			    	default:
+			      		console.log("default");
+			  		};
   			};
 		}
 		else {
@@ -64,16 +96,18 @@ var worker;
 		}
    }
    
-   function drawFrame(context, plasmaMap, colorMap) {
-      var time = new Date().getTime() * 0.0018;
-    debugger;
+   function drawFrame() {
+      var time = new Date().getTime() * 0.00018;
+      debugger;
       var w = context.canvas.width;
       var h = context.canvas.height;
-      var imageData = context.getImageData(0, 0, w, h);
-      var px = imageData.data;
-      //console.log("Time: " + time + " w: " + w + " h: " + h + " px: " + px);
-      worker.postMessage({'cmd': 'start', 'msg': 'Hi'});
-      var kx = w/h;
+      imageData = context.getImageData(0, 0, w, h);
+      px = imageData.data;
+      //console.log("Time1: " + time + " w: " + w + " h: " + h + " px: " + px);
+	  console.log("post");
+      worker.postMessage({'cmd': 'render', 'msg': 'Hi', 'data': px});
+      //console.log("Time2: " + time + " w: " + w + " h: " + h + " px: " + px);
+	  /*var kx = w/h;
       for(var y=0; y < h; y++) {
          var yy = y/h-.5;
          for(var x=0; x < w; x++) {
@@ -81,8 +115,9 @@ var worker;
             var v = plasmaMap(xx, yy, time);
             colorMap(px, (y*w+x)*4, v);
          }
-      }
-      context.putImageData(imageData, 0, 0);
+      }*/
+      //context.putImageData(imageData, 0, 0);
+	  
    }
    
    function drawStill(canvasId, plasmaMap, colorMap) {
@@ -92,17 +127,22 @@ var worker;
    }
    
     function drawAnimated(canvasId, plasmaMap, colorMap) {
-       var canvas = document.getElementById(canvasId);
-       var context = canvas.getContext( '2d' );
+       canvas = document.getElementById(canvasId);
+       context = canvas.getContext( '2d' );
+	   //debugger;
       //debugger;
-       function animate() {
-       	  console.log("time: " + new Date().getTime());
-       	  debugger;
-          drawFrame(context, plasmaMap, colorMap)
+       //function animate() {
+       	  //console.log("time1: " + new Date().getTime());
+       	  //debugger;
+       //   drawFrame(context, plasmaMap, colorMap4)
           //setTimeout(function(){requestAnimFrame( animate )}, 1000);
-          requestAnimFrame( animate );
-       }
-       requestAnimFrame( animate );
+		  //console.log("time2: " + new Date().getTime());
+          //requestAnimFrame( animate );
+		  //console.log("time3: " + new Date().getTime());
+       //}
+	   	if(running == true) {
+       		requestAnimFrame( drawFrame );
+		}
    }
 
    function plasmaFinal(x, y, time) {
@@ -140,24 +180,27 @@ var worker;
    }
   
    function colorMap4(px, offset, v) {
-     var c = .5+.5*Math.sin(Math.PI*v*5);
-     px[offset  ] = 255*c;
-     px[offset+1] = 255*c;
-     px[offset+2] = 255*c;
-     px[offset+3] = 255;
-   }
-        
-   function colorMapGrey(px, offset, v) {
-     var c = 255*(.5+.5*v*.8);
-     px[offset  ] = c;
-     px[offset+1] = c;
-     px[offset+2] = c;
-     px[offset+3] = 255;
+   	var c = .5 + .5 * Math.sin(Math.PI * v * 5);
+   	px[offset] = 255 * c;
+   	px[offset + 1] = 255 * c;
+   	px[offset + 2] = 255 * c;
+   	px[offset + 3] = 255;
    }
 
-	init();
-      //drawAnimated("plasma1", function(x, y, time) { return Math.sin((x*10+time)); }, colorMap1);
-	drawAnimated("plasma1", plasmaFinal, colorMap1);
+   function colorMapGrey(px, offset, v) {
+   	var c = 255 * (.5 + .5 * v * .8);
+   	px[offset] = c;
+   	px[offset + 1] = c;
+   	px[offset + 2] = c;
+   	px[offset + 3] = 255;
+   }
+
+
+
+   init();
+
+    //drawAnimated("plasma1", function(x, y, time) { return Math.sin((x*10+time)); }, colorMap1);
+	//drawAnimated("plasma1", plasmaFinal, colorMap1);
 
 </script>
 
