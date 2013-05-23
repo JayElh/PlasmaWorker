@@ -1,43 +1,31 @@
-var i=0;
+//var i = 0;
+//var imageData;
 
 function init() {
 	self.addEventListener('message', function(e) {
-	  	var data = e.data;
-		//window.console.log("worker");
+		var eventData = e.data;
 
-  		switch (data.cmd) {
-    		case 'start':
-    		//console.log("data: " +  data.msg);
-    	  	self.postMessage('WORKER STARTED: ' + data.msg);
-    	  	break;
-    	case 'stop':
-    	  	self.postMessage('WORKER STOPPED: ' + data.msg +
-    	                   '. (buttons will no longer work)');
-      		self.close(); // Terminates the worker.
-      		break;
-		case 'render' :
-			renderFrame(data.data);
-			//self.postMessage('test: ' + data.msg);
+		switch (eventData.cmd) {
+		
+		case 'render':
+			imageData = eventData.imageData
+			//px = imageData.data
+
+			renderFrame(imageData);
 			break;
-    	default:
-      		self.postMessage('Unknown command: ' + data.msg);
-  		};
+		default:
+			self.postMessage('Unknown command: ' + eventData.msg);
+		};
 	}, false);
-
-
 }
 
-function timedCount() {f
-    i=i+1;
-    postMessage(i); // Posts a message back to the html page
-    setTimeout("timedCount()", 500);
-}
+function renderFrame(imageData) {
+	var time = new Date()
+		.getTime() * 0.00018;
+	var w = imageData.height;
+	var h = imageData.width;
+	px = imageData.data;
 
-function renderFrame(px) {
-	var time = new Date().getTime() * 0.00018;
-	var w = 1000;	//TODO: init size
-	var h = 1000;
-	
 	var kx = w / h;
 	for (var y = 0; y < h; y++) {
 		var yy = y / h - .5;
@@ -48,7 +36,10 @@ function renderFrame(px) {
 		}
 	}
 
-	postMessage({'cmd' : 'result', 'data' : px});
+	postMessage({
+		'cmd': 'result',
+		'imageData': imageData
+	});
 }
 
 
@@ -77,6 +68,7 @@ function colorMap2(px, offset, v) {
 	px[offset + 2] = 255 * (.5 + .5 * Math.sin(Math.PI * v));
 	px[offset + 3] = 255;
 }
+
 function colorMap3(px, offset, v) {
 	px[offset] = 255 * (.5 + .5 * Math.sin(Math.PI * v));
 	px[offset + 1] = 255 * (.5 + .5 * Math.sin(Math.PI * v + 2 * Math.PI / 3));
@@ -84,21 +76,21 @@ function colorMap3(px, offset, v) {
 	px[offset + 3] = 255;
 }
 
-  function colorMap4(px, offset, v) {
-  	var c = .5 + .5 * Math.sin(Math.PI * v * 5);
-  	px[offset] = 255 * c;
-  	px[offset + 1] = 255 * c;
-  	px[offset + 2] = 255 * c;
-  	px[offset + 3] = 255;
-  }
+function colorMap4(px, offset, v) {
+	var c = .5 + .5 * Math.sin(Math.PI * v * 5);
+	px[offset] = 255 * c;
+	px[offset + 1] = 255 * c;
+	px[offset + 2] = 255 * c;
+	px[offset + 3] = 255;
+}
 
-  function colorMapGrey(px, offset, v) {
-  	var c = 255 * (.5 + .5 * v * .8);
-  	px[offset] = c;
-  	px[offset + 1] = c;
-  	px[offset + 2] = c;
-  	px[offset + 3] = 255;
-  }
+function colorMapGrey(px, offset, v) {
+	var c = 255 * (.5 + .5 * v * .8);
+	px[offset] = c;
+	px[offset + 1] = c;
+	px[offset + 2] = c;
+	px[offset + 3] = 255;
+}
 
-  init();
-  //timedCount();
+init();
+
