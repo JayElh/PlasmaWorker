@@ -27,7 +27,7 @@ function init() {
 
 }
 
-function timedCount() {
+function timedCount() {f
     i=i+1;
     postMessage(i); // Posts a message back to the html page
     setTimeout("timedCount()", 500);
@@ -35,8 +35,8 @@ function timedCount() {
 
 function renderFrame(px) {
 	var time = new Date().getTime() * 0.00018;
-	var w = 100;	//TODO: init size
-	var h = 100;
+	var w = 1000;	//TODO: init size
+	var h = 1000;
 	
 	var kx = w / h;
 	for (var y = 0; y < h; y++) {
